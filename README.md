@@ -23,6 +23,7 @@ Plain Python 3, no dependencies.
 | `demo.py` | Runs the three required scenarios and prints a log |
 | `test_order_system.py` | Unit tests for every requirement |
 | `demo_output.txt`, `test_output.txt` | Captured output from the runs below |
+| `screenshots/` | Screenshots of the program and tests running |
 
 ## How to run
 
@@ -52,6 +53,10 @@ For worker writes, `LockService` gives each lease a token that is always larger 
 ### 1. Correct event ordering and duplicate handling
 
 Delivery order: **v2, v1, v2 (again)**, then v3 and a duplicate v3.
+
+![Test 1 screenshot: ordering and duplicates](screenshots/1-ordering-duplicates.png)
+
+Terminal log:
 
 ```
 TEST 1: Versioned ordering + duplicates  (delivery: v2, v1, v2, v3)
@@ -85,6 +90,10 @@ TEST 1: Versioned ordering + duplicates  (delivery: v2, v1, v2, v3)
 
 v1 is delivered, v2 is never delivered, and v3 is delivered.
 
+![Test 2 screenshot: missing event](screenshots/2-missing-event.png)
+
+Terminal log:
+
 ```
 TEST 2: Missing event  (v1 delivered, v2 never arrives, v3 delivered)
 ======================================================================
@@ -100,6 +109,10 @@ TEST 2: Missing event  (v1 delivered, v2 never arrives, v3 delivered)
 The order stays at `CREATED` (v1) instead of jumping to `SHIPPED`. v3 is held in `pending` and v2 is recorded as `missing=[2]`. The unit test `test_late_missing_event_unblocks_pending` also checks that if v2 arrives later, the order catches up to `SHIPPED`.
 
 ### 3. Stale worker rejection (fencing tokens)
+
+![Test 3 screenshot: stale worker rejected](screenshots/3-stale-worker.png)
+
+Terminal log:
 
 ```
 TEST 3: Stale worker with fencing tokens
@@ -122,6 +135,10 @@ TEST 3: Stale worker with fencing tokens
 worker-A gets token 1 and then stalls. Its lease expires and worker-B gets token 2 and writes `PAID`. When worker-A wakes up and tries to write with token 1, the store has already seen token 2, so the write is **rejected** and the order stays `PAID`.
 
 ### Unit test run
+
+![Unit test screenshot](screenshots/4-unit-tests.png)
+
+Terminal log:
 
 ```
 test_stale_token_rejected (test_order_system.FencingTests.test_stale_token_rejected) ... ok
