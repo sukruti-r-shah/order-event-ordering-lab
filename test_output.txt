@@ -1,0 +1,11 @@
+test_stale_token_rejected (test_order_system.FencingTests.test_stale_token_rejected) ... ok
+test_duplicate_after_apply_is_ignored (test_order_system.OrderingTests.test_duplicate_after_apply_is_ignored) ... ok
+test_duplicate_while_pending_is_ignored (test_order_system.OrderingTests.test_duplicate_while_pending_is_ignored) ... ok
+test_late_missing_event_unblocks_pending (test_order_system.OrderingTests.test_late_missing_event_unblocks_pending) ... ok
+test_missing_event_does_not_jump_ahead (test_order_system.OrderingTests.test_missing_event_does_not_jump_ahead) ... ok
+test_out_of_order_is_reordered (test_order_system.OrderingTests.test_out_of_order_is_reordered) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.000s
+
+OK

@@ -1,0 +1,53 @@
+
+======================================================================
+TEST 1: Versioned ordering + duplicates  (delivery: v2, v1, v2, v3)
+======================================================================
+  RECEIVED  order-1 v2 PAID
+  BUFFERED  order-1 v2 PAID -- waiting for missing version(s) [1]
+    state -> order-1: status=NONE version=0 pending=[2] missing=[1]
+  RECEIVED  order-1 v1 CREATED
+  APPLIED   order-1 v1 CREATED  (NONE -> CREATED)
+  APPLIED   order-1 v2 PAID  (CREATED -> PAID)
+    state -> order-1: status=PAID version=2 pending=[] missing=[]
+  RECEIVED  order-1 v2 PAID
+  DUPLICATE order-1 v2 PAID ignored (current version = 2)
+    state -> order-1: status=PAID version=2 pending=[] missing=[]
+  RECEIVED  order-1 v3 SHIPPED
+  APPLIED   order-1 v3 SHIPPED  (PAID -> SHIPPED)
+    state -> order-1: status=SHIPPED version=3 pending=[] missing=[]
+  RECEIVED  order-1 v3 SHIPPED
+  DUPLICATE order-1 v3 SHIPPED ignored (current version = 3)
+    state -> order-1: status=SHIPPED version=3 pending=[] missing=[]
+
+  Applied order: v1 CREATED -> v2 PAID -> v3 SHIPPED
+  RESULT: PASS (applied in version order, duplicates ignored)
+
+======================================================================
+TEST 2: Missing event  (v1 delivered, v2 never arrives, v3 delivered)
+======================================================================
+  RECEIVED  order-2 v1 CREATED
+  APPLIED   order-2 v1 CREATED  (NONE -> CREATED)
+  RECEIVED  order-2 v3 SHIPPED
+  BUFFERED  order-2 v3 SHIPPED -- waiting for missing version(s) [2]
+
+  Final state: order-2: status=CREATED version=1 pending=[3] missing=[2]
+  RESULT: PASS (order did NOT jump to SHIPPED; v2 recorded as missing, v3 held as pending)
+
+======================================================================
+TEST 3: Stale worker with fencing tokens
+======================================================================
+  RECEIVED  order-3 v1 CREATED
+  APPLIED   order-3 v1 CREATED  (NONE -> CREATED)
+  LOCK      worker-A acquired lease on order-3 with fencing token 1
+  ...        worker-A stalls (long GC pause / network partition); its lease expires
+  LOCK      worker-B acquired lease on order-3 with fencing token 2
+  ACCEPTED  worker-B token=2 order-3 v2 PAID
+  RECEIVED  order-3 v2 PAID
+  APPLIED   order-3 v2 PAID  (CREATED -> PAID)
+    state -> order-3: status=PAID version=2 pending=[] missing=[]
+  ...        worker-A wakes up, still thinks it holds the lease, and tries to write
+  REJECTED  worker-A token=1 order-3 v2 CANCELLED -- stale token (highest seen = 2)
+    state -> order-3: status=PAID version=2 pending=[] missing=[]
+  RESULT: PASS (newer token accepted, older token rejected)
+
+All scenarios passed.
